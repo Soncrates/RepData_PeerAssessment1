@@ -22,7 +22,10 @@ I noticed that aggregate removes any day where ALL the data was missing! Much di
 #Q1<-tapply(data$steps,data$date,FUN = sum, na.rm=TRUE)
 Q1 <- aggregate(steps ~ date, data = data, sum, na.rm = TRUE)
 
-hist(Q1$steps,xlab="Steps Per Day",ylab = "Number of Days",ylim=c(0,30),main="Steps Per Day",col='red')
+hist(Q1$steps,ylim=c(0,30),col='red',
+     main="Steps Per Day",
+     xlab="Steps Per Day",
+     ylab = "Number of Days")
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
@@ -42,7 +45,10 @@ The mean is 1.0766189\times 10^{4} and the median is 1.0765\times 10^{4}
 ```r
 Q2 <- aggregate(steps ~ interval, data = data, mean, na.rm = TRUE)
 
-plot(Q2$steps,type="l",main="Step count averaged by day",xlab="5 minute intervals throughout each day",ylab="average steps per interval", col="red")
+plot(Q2$steps,type="l", col="red",
+     main="Step count averaged by day",
+     xlab="5 minute intervals throughout each day",
+     ylab="average steps per interval")
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-4-1.png) 
@@ -51,6 +57,7 @@ plot(Q2$steps,type="l",main="Step count averaged by day",xlab="5 minute interval
 
 ```r
 max_interval <- Q2[Q2$steps==max(Q2$steps),]$interval
+max_interval <- Q2$interval[which.max(Q2$steps)]
 ```
 The interval with the most average steps is 835
 
@@ -65,25 +72,23 @@ There are 2304 missing values in the data
 
 **Create a new dataset that is equal to the original dataset but with the missing data filled in.**
 
-I reused the averages processed for Question 2 to populate the missing data.  If i have time I would like to remove the for loop in favor dataframe based solution.
+I reused the averages processed for Question 2 to populate the missing data.
 
 ```r
-robust <- data
-for (x in seq(1,length(robust$steps))) {
-  if (is.na(robust$steps[x])==FALSE) {
-    next
-  }
-  robust$steps[x] <- Q2[Q2$interval == robust$interval[x],]$steps
-  counter <- counter -1
-}
+d <- merge(data,Q2, by="interval", suffixes=c("",".temp"))
+
+d$steps <- ifelse(is.na(d$steps) == FALSE, d$steps, d$steps.temp)
 ```
 
 **Make a histogram of the total number of steps taken each day**
 
 ```r
-Q3 <- aggregate(steps ~ date, data = robust, sum)
+Q3 <- aggregate(steps ~ date, data = d, sum)
 
-hist(Q3$steps,xlab="Steps Per Day",ylab = "Number of Days",ylim=c(0,40),main="Steps Per Day", col="blue")
+hist(Q3$steps, col="blue",ylim=c(0,40),
+     main="Steps Per Day",
+     xlab="Steps Per Day",
+     ylab = "Number of Days")
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-8-1.png) 
@@ -100,7 +105,7 @@ The mean is 1.0766189\times 10^{4} and the median is 1.0766189\times 10^{4}
 **Create a new factor variable in the dataset with two levels -- "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.**
 
 ```r
-Q4 <- robust
+Q4 <- d
 Q4$partition <- ifelse(weekdays(Q4$date) %in% c("Saturday","Sunday"), "weekend", "weekday")
 Q4$partition <- as.factor(Q4$partition)
 ```
@@ -109,7 +114,9 @@ Q4$partition <- as.factor(Q4$partition)
 ```r
 Q4 <- aggregate(steps ~ interval + partition, data = Q4, mean)
 library("lattice")
-xyplot(steps ~ interval | partition, data = Q4, type = "l", layout = c(1, 2),  xlab = "Interval", ylab = "Number of steps")
+xyplot(steps ~ interval | partition, data = Q4, type = "l", layout = c(1, 2),
+       xlab = "Interval", 
+       ylab = "Number of steps")
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
